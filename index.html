@@ -1,29 +1,510 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Frame — STT + OpenRouter + Картинка + TTS</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:url("images/wallpaper.jpg")center/cover no-repeat fixed;overflow:hidden;color:#fff;}
-.app{display:flex;width:100%;height:100%;}
-#text-panel{flex:1;display:flex;justify-content:center;align-items:center;background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));border-right:1px solid rgba(255,255,255,0.08);padding:20px;font-size:24px;font-weight:600;line-height:1.4;overflow-wrap:break-word;opacity:0;transform:translateX(-50px);transition:all 0.5s ease;}
-#image-panel{flex:1;display:flex;justify-content:center;align-items:center;}
-#ai-image{max-width:90%;max-height:90%;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,0.4);opacity:0;transform:translateX(50px);transition:all 0.5s ease;}
-#clock{position:absolute;top:12px;left:12px;font-size:22px;font-weight:600;padding:6px 18px;background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.06);border-radius:50px;backdrop-filter:blur(6px);}
-#fullscreen-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;padding:20px 40px;border:none;border-radius:24px;background:rgba(255,255,255,0.3);color:#fff;backdrop-filter:blur(12px);cursor:pointer;}
-#fullscreen-btn:hover{background:rgba(255,255,255,0.5);}
-@media(max-width:480px){#text-panel{font-size:18px;}#fullscreen-btn{font-size:20px;padding:16px 32px;}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Smart Frame 2.3</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000;
+      --text: #fff;
+      --glass: rgba(255, 255, 255, 0.07);
+      --glow: 0 0 30px rgba(110, 68, 255, 0.4);
+      --blur: blur(30px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      background: url('img/1.jpg') center/cover no-repeat;
+      transition: background 2s ease;
+      position: relative;
+    }
+
+    #clock {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14vw;
+      font-weight: 200;
+      letter-spacing: -4px;
+      opacity: 0.95;
+      z-index: 10;
+      text-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+
+    #panel {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      width: 92%;
+      max-width: 900px;
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 40px;
+      padding: 40px;
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      opacity: 0;
+      box-shadow: var(--glow), 0 20px 60px rgba(0,0,0,0.4);
+      transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 20;
+    }
+
+    #panel.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    #text {
+      flex: 1;
+      font-size: 2.2rem;
+      line-height: 1.35;
+      font-weight: 400;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    #ai-image {
+      width: 200px;
+      height: 200px;
+      border-radius: 28px;
+      object-fit: cover;
+      box-shadow: var(--glow), 0 15px 40px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: scale(0.85);
+      transition: all 0.7s ease;
+    }
+
+    #ai-image.show { opacity: 1; transform: scale(1); }
+
+    #status {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      font-size: 15px;
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      padding: 10px 18px;
+      border-radius: 30px;
+      z-index: 30;
+      font-weight: 500;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    #start-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px;
+      height: 120px;
+      background: rgba(110, 68, 255, 0.2);
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(110, 68, 255, 0.4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: var(--glow), 0 20px 50px rgba(110, 68, 255, 0.3);
+      transition: all 0.6s ease;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: var(--glow), 0 20px 50px rgba(110, 68, 255, 0.3); }
+      50% { box-shadow: 0 0 50px rgba(110, 68, 255, 0.6), 0 30px 70px rgba(110, 68, 255, 0.4); }
+    }
+
+    .thinking {
+      background: linear-gradient(135deg, #0a001f, #1a0033, #2d0066, #0f003f) !important;
+      background-size: 400% 400% !important;
+      animation: cosmic 12s ease infinite;
+    }
+
+    @keyframes cosmic {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    #music-controls {
+      position: absolute;
+      bottom: 100px;
+      right: 30px;
+      display: flex;
+      gap: 10px;
+      z-index: 30;
+    }
+
+    .music-btn {
+      width: 50px;
+      height: 50px;
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: 0.3s;
+    }
+
+    .music-btn:hover { transform: scale(1.1); }
+
+    #youtube-player { display: none; }
+  </style>
 </head>
 <body>
-<div class="app">
-  <div id="text-panel"></div>
-  <div id="image-panel"><img id="ai-image" src="" alt="AI Image"></div>
+
   <div id="clock">--:--</div>
-  <button id="fullscreen-btn">ВО ВЕСЬ ЭКРАН</button>
-</div>
-<script src="tab.js"></script>
+  <div id="panel">
+    <div id="text">Скажите «Рамка»...</div>
+    <img id="ai-image" src="" alt="" />
+  </div>
+  <div id="status">Готова</div>
+  <div id="start-btn">Нажми</div>
+
+  <div id="music-controls" style="display:none">
+    <div class="music-btn" id="play-pause">Pause</div>
+    <div class="music-btn" id="vol-down">Volume Down</div>
+    <div class="music-btn" id="vol-up">Volume Up</div>
+  </div>
+
+  <div id="youtube-player"></div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const clock = $('clock');
+    const panel = $('panel');
+    const textEl = $('text');
+    const imgEl = $('ai-image');
+    const status = $('status');
+    const startBtn = $('start-btn');
+    const musicControls = $('music-controls');
+    const playPauseBtn = $('play-pause');
+    const volDownBtn = $('vol-down');
+    const volUpBtn = $('vol-up');
+    const youtubePlayer = $('youtube-player');
+    const body = document.body;
+
+    let hideTimer, recog, ttsInProgress = false;
+    let player = null;
+    let volume = 50;
+    let isPlaying = false;
+    let weatherCache = { data: null, city: '', timestamp: 0 };
+    let alarms = [];
+    let reminders = [];
+    const CACHE_TIME = 10 * 60 * 1000;
+    const WAKE_WORD = "рамка";
+    const SLIDE_MS = 15000;
+    const SLIDESHOW_COUNT = 6;
+    const OPENROUTER_KEY = "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";
+
+    // === YouTube Player ===
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    function onYouTubeIframeAPIReady() {}
+
+    function createPlayer(videoId) {
+      if (player) player.destroy();
+      player = new YT.Player('youtube-player', {
+        height: '0', width: '0', videoId,
+        playerVars: { 'autoplay': 1, 'loop': 1, 'playlist': videoId, 'controls': 0, 'modestbranding': 1 },
+        events: {
+          'onReady': (e) => {
+            e.target.setVolume(volume);
+            e.target.playVideo();
+            isPlaying = true;
+            playPauseBtn.textContent = 'Pause';
+            musicControls.style.display = 'flex';
+          }
+        }
+      });
+    }
+
+    // === ФИНАЛЬНЫЙ ПОИСК: ytsr + corsproxy.io + ПРЯМОЙ ID ===
+    async function searchAndPlay(query) {
+      showPanel();
+      textEl.textContent = 'Ищу музыку...';
+      body.classList.add('thinking');
+
+      try {
+        const search = encodeURIComponent(query + ' official audio');
+        const proxy = 'https://corsproxy.io/?';
+        const apiUrl = `https://ytsr.vercel.app/search?q=${search}&maxResults=1`;
+
+        const res = await fetch(proxy + encodeURIComponent(apiUrl));
+        if (!res.ok) throw new Error('Network error');
+
+        const data = await res.json();
+
+        if (data.items && data.items[0] && data.items[0].id) {
+          const videoId = data.items[0].id;
+          createPlayer(videoId);
+          textEl.textContent = `Играет: ${query}`;
+          speakText(`Включаю ${query}`);
+        } else {
+          // Прямой поиск по названию
+          const fallbackId = await getDirectVideoId(query);
+          if (fallbackId) {
+            createPlayer(fallbackId);
+            textEl.textContent = `Играет: ${query}`;
+            speakText(`Включаю ${query}`);
+          } else {
+            throw new Error('Not found');
+          }
+        }
+      } catch (e) {
+        textEl.textContent = 'Не нашел. Скажи точнее.';
+        speakText('Не нашел. Скажи точнее.');
+      } finally {
+        setTimeout(() => {
+          body.classList.remove('thinking');
+          status.textContent = 'Слушаю...';
+        }, 1500);
+      }
+    }
+
+    // Прямой поиск по названию (для надёжности)
+    async function getDirectVideoId(query) {
+      try {
+        const q = encodeURIComponent(`${query} official audio`);
+        const res = await fetch(`https://corsproxy.io/?https://www.youtube.com/results?search_query=${q}`);
+        const html = await res.text();
+        const match = html.match(/"videoId":"([^"]{11})"/);
+        return match ? match[1] : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function togglePlay() {
+      if (!player) return;
+      isPlaying ? player.pauseVideo() : player.playVideo();
+      isPlaying = !isPlaying;
+      playPauseBtn.textContent = isPlaying ? 'Pause' : 'Play';
+    }
+
+    function setVolume(delta) {
+      volume = Math.max(0, Math.min(100, volume + delta));
+      if (player) player.setVolume(volume);
+    }
+
+    playPauseBtn.onclick = togglePlay;
+    volUpBtn.onclick = () => setVolume(10);
+    volDownBtn.onclick = () => setVolume(-10);
+
+    // === МУЗЫКА: КОМАНДЫ ===
+    const MUSIC_KEYWORDS = ['музык', 'включи', 'играй', 'песн', 'трек', 'найди', 'поищи', 'поставь', 'запускай', 'выключи', 'пауза', 'стоп', 'тише', 'громче'];
+
+    function isMusicCommand(q) {
+      return MUSIC_KEYWORDS.some(w => q.includes(w));
+    }
+
+    function extractMusicQuery(q) {
+      let clean = q.replace(/рамка|включи|играй|найди|поищи|поставь|запускай/gi, '').trim();
+      if (clean.includes('выключи') || clean.includes('стоп')) return 'stop';
+      if (clean.includes('тише')) return 'vol-';
+      if (clean.includes('громче')) return 'vol+';
+      return clean || 'лоуфай';
+    }
+
+    function handleMusic(q) {
+      const cmd = extractMusicQuery(q);
+      if (cmd === 'stop') {
+        if (player) { player.destroy(); player = null; musicControls.style.display = 'none'; }
+        textEl.textContent = 'Музыка выключена'; speakText('Музыка выключена');
+      } else if (cmd === 'vol-') { setVolume(-10); speakText('Тише'); }
+      else if (cmd === 'vol+') { setVolume(10); speakText('Громче'); }
+      else searchAndPlay(cmd);
+    }
+
+    // === ОСТАЛЬНОЕ (ПОГОДА, БУДИЛЬНИК, НОВОСТИ, TTS, GPT) ===
+    const WEATHER_KEYWORDS = ['погода', 'прогноз', 'улица', 'холодно', 'жарко', 'дождь', 'солнце', 'ветер', 'снег', 'град', 'туман', 'мороз', 'тепло', 'холод', 'градус'];
+    const ALARM_KEYWORDS = ['будильник', 'поставь будильник', 'разбуди'];
+    const REMINDER_KEYWORDS = ['напомни', 'напомнить'];
+    const NEWS_KEYWORDS = ['новости', 'что нового', 'что случилось'];
+
+    function isWeatherQuery(q) { return WEATHER_KEYWORDS.some(w => q.includes(w)); }
+    function isAlarmCommand(q) { return ALARM_KEYWORDS.some(w => q.includes(w)); }
+    function isReminderCommand(q) { return REMINDER_KEYWORDS.some(w => q.includes(w)); }
+    function isNewsCommand(q) { return NEWS_KEYWORDS.some(w => q.includes(w)); }
+
+    function extractCity(q) { const m = q.match(/в\s+([а-яё]+(?:\s+[а-яё]+)?)/i); return m ? m[1] : 'Москва'; }
+    function extractTime(q) { const m = q.match(/(\d{1,2}:\d{2})/); return m ? m[1] : null; }
+
+    async function getWeather(city) {
+      const now = Date.now();
+      if (weatherCache.city === city && weatherCache.data && (now - weatherCache.timestamp) < CACHE_TIME) return weatherCache.data;
+      try {
+        const res = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+        const data = await res.json();
+        const c = data.current_condition[0];
+        const result = { temp: c.temp_C, feels: c.FeelsLikeC, desc: c.lang_ru[0].value, wind: c.windspeedKmph, humidity: c.humidity };
+        weatherCache = { data: result, city, timestamp: now };
+        return result;
+      } catch { return { temp: '?', feels: '?', desc: 'Нет данных', wind: '?', humidity: '?' }; }
+    }
+
+    async function handleWeather(q) {
+      const city = extractCity(q);
+      const w = await getWeather(city);
+      const response = `${city}: ${w.temp}°C (ощущ. ${w.feels}°). ${w.desc}.`;
+      textEl.textContent = response; speakText(response);
+    }
+
+    function setAlarm(timeStr) {
+      const [h, m] = timeStr.split(':').map(Number);
+      const now = new Date();
+      const alarm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+      if (alarm < now) alarm.setDate(alarm.getDate() + 1);
+      alarms.push(alarm.getTime());
+      speakText(`Будильник на ${timeStr}`);
+    }
+
+    function checkAlarms() {
+      const now = Date.now();
+      alarms = alarms.filter(t => {
+        if (t <= now) {
+          speakText("Время просыпаться!");
+          textEl.textContent = "Будильник!";
+          setTimeout(() => textEl.textContent = 'Скажите «Рамка»...', 5000);
+          return false;
+        }
+        return true;
+      });
+    }
+    setInterval(checkAlarms, 1000);
+
+    async function getNews() {
+      showPanel();
+      textEl.textContent = 'Загружаю новости...';
+      try {
+        const res = await fetch('https://rbc.ru');
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const headlines = Array.from(doc.querySelectorAll('.js-news-feed-item a')).slice(0, 3).map(a => a.textContent.trim());
+        const news = headlines.join('. ');
+        textEl.textContent = news;
+        speakText(`Новости: ${news}`);
+      } catch { textEl.textContent = 'Нет новостей'; speakText('Нет новостей'); }
+    }
+
+    async function getAnswer(q) {
+      if (isWeatherQuery(q)) return handleWeather(q);
+      if (isMusicCommand(q)) return handleMusic(q);
+      if (isAlarmCommand(q)) { const time = extractTime(q); if (time) setAlarm(time); else speakText('Скажи время'); return; }
+      if (isReminderCommand(q)) { speakText('Скажи время и что напомнить'); return; }
+      if (isNewsCommand(q)) return getNews();
+
+      showPanel(); textEl.textContent = 'Думаю...'; body.classList.add('thinking');
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST", headers: { "Authorization": `Bearer ${OPENROUTER_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "gpt-4o-mini", temperature: 0.4, max_tokens: 500, messages: [
+            { role: "system", content: "Ты — умная фоторамка. Отвечай коротко и дружелюбно." },
+            { role: "user", content: q }
+          ]})
+        });
+        const data = await res.json();
+        const answer = data.choices?.[0]?.message?.content?.trim() || "Хм...";
+        textEl.textContent = answer; speakText(answer);
+      } catch { textEl.textContent = "Нет сети"; }
+      finally { setTimeout(() => { body.classList.remove('thinking'); status.textContent = 'Слушаю...'; }, 1500); }
+    }
+
+    // === ГОЛОС, ЧАСЫ, СЛАЙДЫ, TTS ===
+    function updateClock() {
+      const now = new Date();
+      clock.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    const images = Array.from({length: SLIDESHOW_COUNT}, (_,i) => `img/${i+1}.jpg`);
+    let currentSlide = 0;
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % images.length;
+      body.style.backgroundImage = `url('${images[currentSlide]}')`;
+    }
+    setInterval(nextSlide, SLIDE_MS); nextSlide();
+
+    function showPanel() {
+      panel.classList.add('show');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        panel.classList.remove('show');
+        setTimeout(() => {
+          if (!panel.classList.contains('show')) {
+            textEl.textContent = 'Скажите «Рамка»...';
+            imgEl.classList.remove('show'); imgEl.src = '';
+          }
+        }, 600);
+      }, 12000);
+    }
+
+    function speakText(text) {
+      if (!window.speechSynthesis || ttsInProgress) return;
+      if (recog) recog.stop();
+      if (player && isPlaying) togglePlay();
+      ttsInProgress = true;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'ru-RU'; utter.rate = 0.95;
+      utter.onend = () => {
+        ttsInProgress = false;
+        if (player && !isPlaying) togglePlay();
+        setTimeout(() => { if (recog) recog.start(); }, 700);
+      };
+      window.speechSynthesis.speak(utter);
+    }
+
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    function startSTT() {
+      if (!Rec) return status.textContent = "Голос не поддерживается";
+      recog = new Rec(); recog.lang = "ru-RU"; recog.continuous = true; recog.interimResults = false;
+      recog.onresult = e => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (!e.results[i].isFinal) continue;
+          const text = e.results[i][0].transcript.trim().toLowerCase();
+          if (text.includes(WAKE_WORD)) {
+            const q = text.split(WAKE_WORD).pop().trim();
+            if (q) getAnswer(q);
+          }
+        }
+      };
+      recog.onerror = () => setTimeout(() => { if (!ttsInProgress) recog.start(); }, 1000);
+      recog.onend = () => { if (!ttsInProgress) setTimeout(() => recog.start(), 800); };
+      recog.start(); status.textContent = 'Слушаю...';
+    }
+
+    startBtn.addEventListener('click', async () => {
+      if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+      startBtn.style.opacity = '0'; startBtn.style.transform = 'translate(-50%, -50%) scale(0.5)';
+      setTimeout(() => startBtn.remove(), 600);
+      try { await navigator.mediaDevices.getUserMedia({ audio: true }); startSTT(); }
+      catch { status.textContent = 'Микрофон не доступен'; }
+    });
+
+    if (location.protocol !== 'https:' && !location.hostname.includes('localhost')) {
+      status.textContent = 'Нужен HTTPS!';
+    }
+  </script>
 </body>
 </html>
