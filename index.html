@@ -3,508 +3,933 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Smart Frame 2.3</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700&display=swap" rel="stylesheet">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Smart Frame 22.0 — Лазерный Ультиматум</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     :root {
-      --bg: #000;
-      --text: #fff;
-      --glass: rgba(255, 255, 255, 0.07);
-      --glow: 0 0 30px rgba(110, 68, 255, 0.4);
-      --blur: blur(30px);
+      --text: #ffffff;
+      --text-soft: rgba(255, 255, 255, 0.78);
+      --glass: rgba(255, 255, 255, 0.14);
+      --glass-border: rgba(255, 255, 255, 0.22);
+      --glow: 0 0 50px rgba(100, 200, 255, 0.35);
+      --blur: blur(38px);
+      --shadow: 0 32px 95px rgba(0, 0, 0, 0.52);
+      --radius: 32px;
+      --laser: #60e0ff;
+      --laser-glow: 0 0 60px #60e0ff, 0 0 120px #60e0ff;
+      --x-color: #60e0ff;
+      --o-color: #ff60a0;
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       height: 100%;
       overflow: hidden;
       font-family: 'Inter', sans-serif;
-      background: var(--bg);
+      background: #000 center/cover no-repeat;
       color: var(--text);
+      transition: background 2.8s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
-
-    body {
-      background: url('img/1.jpg') center/cover no-repeat;
-      transition: background 2s ease;
-      position: relative;
-    }
-
-    #clock {
+    /* Startup Flash */
+    body::before {
+      content: '';
       position: absolute;
-      top: 50px;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, rgba(100,200,255,0.15), transparent 70%);
+      opacity: 0;
+      pointer-events: none;
+      animation: startupGlow 1.8s ease-out forwards;
+      z-index: 1;
+    }
+    @keyframes startupGlow {
+      0% { opacity: 0; transform: scale(0.8); }
+      50% { opacity: 0.3; transform: scale(1.1); }
+      100% { opacity: 0; transform: scale(1); }
+    }
+    /* Time and Date */
+    #time-container {
+      position: absolute;
+      top: 40px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 14vw;
-      font-weight: 200;
-      letter-spacing: -4px;
-      opacity: 0.95;
+      text-align: center;
       z-index: 10;
-      text-shadow: 0 8px 40px rgba(0,0,0,0.6);
+      width: 100%;
+      padding: 0 5vw;
+      pointer-events: none;
     }
-
-    #panel {
+    #clock {
+      font-size: clamp(8vw, 13vw, 16vw);
+      font-weight: 100;
+      letter-spacing: -2px;
+      line-height: 1;
+      text-shadow: 0 8px 35px rgba(0,0,0,0.7);
+      opacity: 0.98;
+    }
+    #date {
+      font-size: clamp(1.8vw, 3.2vw, 3.6vw);
+      font-weight: 300;
+      margin-top: 10px;
+      opacity: 0.82;
+      letter-spacing: 1.2px;
+      text-shadow: 0 2px 14px rgba(0,0,0,0.6);
+    }
+    /* Response Panel */
+    #response {
       position: absolute;
-      bottom: 60px;
+      top: 74%;
       left: 50%;
-      transform: translateX(-50%) translateY(30px);
+      transform: translate(-50%, -50%) translateY(20px);
       width: 92%;
       max-width: 900px;
       background: var(--glass);
       backdrop-filter: var(--blur);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 40px;
-      padding: 40px;
-      display: flex;
-      gap: 40px;
-      align-items: center;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: clamp(20px, 5vw, 38px);
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-weight: 300;
+      text-align: center;
       opacity: 0;
-      box-shadow: var(--glow), 0 20px 60px rgba(0,0,0,0.4);
-      transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-      z-index: 20;
+      box-shadow: var(--glow), var(--shadow);
+      transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 25;
     }
-
-    #panel.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    #text {
-      flex: 1;
-      font-size: 2.2rem;
-      line-height: 1.35;
-      font-weight: 400;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    #response.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) translateY(0);
     }
-
-    #ai-image {
-      width: 200px;
-      height: 200px;
-      border-radius: 28px;
-      object-fit: cover;
-      box-shadow: var(--glow), 0 15px 40px rgba(0,0,0,0.5);
-      opacity: 0;
-      transform: scale(0.85);
-      transition: all 0.7s ease;
-    }
-
-    #ai-image.show { opacity: 1; transform: scale(1); }
-
-    #status {
+    /* Weather Panel */
+    #weather-panel {
       position: absolute;
-      bottom: 30px;
-      right: 30px;
-      font-size: 15px;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px) scale(0.96);
+      width: 92%;
+      max-width: 900px;
       background: var(--glass);
       backdrop-filter: var(--blur);
-      padding: 10px 18px;
-      border-radius: 30px;
-      z-index: 30;
-      font-weight: 500;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: clamp(20px, 5vw, 38px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      opacity: 0;
+      box-shadow: var(--glow), var(--shadow);
+      transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 20;
     }
-
-    #start-btn {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 120px;
-      height: 120px;
-      background: rgba(110, 68, 255, 0.2);
-      backdrop-filter: blur(20px);
-      border: 2px solid rgba(110, 68, 255, 0.4);
-      border-radius: 50%;
+    #weather-panel.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+    .weather-day {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 48px;
-      cursor: pointer;
-      z-index: 1000;
-      box-shadow: var(--glow), 0 20px 50px rgba(110, 68, 255, 0.3);
-      transition: all 0.6s ease;
-      animation: pulse 2s infinite;
+      gap: 14px;
+      font-size: clamp(1.3rem, 3vw, 1.8rem);
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInUp 0.6s forwards;
     }
-
-    @keyframes pulse {
-      0%, 100% { box-shadow: var(--glow), 0 20px 50px rgba(110, 68, 255, 0.3); }
-      50% { box-shadow: 0 0 50px rgba(110, 68, 255, 0.6), 0 30px 70px rgba(110, 68, 255, 0.4); }
+    .weather-day:nth-child(1) { animation-delay: 0.15s; }
+    .weather-day:nth-child(2) { animation-delay: 0.25s; }
+    .weather-day:nth-child(3) { animation-delay: 0.35s; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+    .weather-icon {
+      font-size: clamp(2.5rem, 5.8vw, 3.4rem);
+      filter: drop-shadow(0 3px 10px rgba(0,0,0,0.55));
     }
-
-    .thinking {
-      background: linear-gradient(135deg, #0a001f, #1a0033, #2d0066, #0f003f) !important;
-      background-size: 400% 400% !important;
-      animation: cosmic 12s ease infinite;
+    .weather-text {
+      flex: 1;
+      font-weight: 300;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.65);
     }
-
-    @keyframes cosmic {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    .weather-details {
+      font-size: clamp(0.98rem, 2.1vw, 1.28rem);
+      opacity: 0.82;
+      margin-top: 4px;
+      font-weight: 300;
     }
-
+    /* Music Controls */
     #music-controls {
       position: absolute;
       bottom: 100px;
-      right: 30px;
+      right: 20px;
       display: flex;
-      gap: 10px;
+      gap: 12px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
       z-index: 30;
     }
-
+    #music-controls.show { opacity: 1; }
     .music-btn {
-      width: 50px;
-      height: 50px;
+      width: clamp(42px, 8.5vw, 52px);
+      height: clamp(42px, 8.5vw, 52px);
       background: var(--glass);
       backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: clamp(19px, 4.2vw, 23px);
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      transition: 0.3s;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.38);
+      transition: all 0.35s ease;
     }
-
-    .music-btn:hover { transform: scale(1.1); }
-
-    #youtube-player { display: none; }
+    .music-btn:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.28);
+    }
+    /* Laser Bar */
+    #laser-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, transparent 0%, var(--laser) 20%, #ffffff 50%, var(--laser) 80%, transparent 100%);
+      background-size: 300% 100%;
+      opacity: 0;
+      z-index: 30;
+      pointer-events: none;
+      box-shadow: var(--laser-glow);
+      transition: opacity 0.3s ease;
+      animation: laserFlow 2.2s infinite linear, laserPulse 1.8s infinite ease-in-out;
+      transform-origin: bottom;
+    }
+    #laser-bar.active { opacity: 1; }
+    @keyframes laserFlow { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
+    @keyframes laserPulse {
+      0%, 100% { height: 6px; box-shadow: 0 0 60px #60e0ff, 0 0 120px #60e0ff; }
+      50% { height: 10px; box-shadow: 0 0 90px #60e0ff, 0 0 160px #60e0ff, 0 0 200px #60e0ff; }
+    }
+    /* Start Button */
+    #start-btn {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(100px, 20vw, 120px);
+      height: clamp(100px, 20vw, 120px);
+      background: rgba(210, 210, 255, 0.20);
+      backdrop-filter: blur(24px);
+      border: 2px solid rgba(230, 230, 255, 0.38);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(36px, 8.5vw, 48px);
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: var(--glow), 0 24px 65px rgba(190, 190, 255, 0.32);
+      transition: all 0.7s ease;
+      animation: pulse 2.4s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: var(--glow), 0 24px 65px rgba(190, 190, 255, 0.32); }
+      50% { box-shadow: 0 0 58px rgba(210, 210, 255, 0.58), 0 34px 85px rgba(190, 190, 255, 0.42); }
+    }
+    /* Tic-Tac-Toe Game */
+    #game-panel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 92%;
+      max-width: 420px;
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      opacity: 0;
+      box-shadow: var(--glow), var(--shadow);
+      transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 30;
+      pointer-events: none;
+    }
+    #game-panel.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: auto;
+    }
+    #game-status {
+      text-align: center;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      margin-bottom: 16px;
+      font-weight: 300;
+    }
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .cell {
+      width: 100%;
+      padding-top: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(3rem, 9vw, 5rem);
+      font-weight: 300;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+    .cell:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.32);
+    }
+    .cell.x { color: var(--x-color); text-shadow: 0 0 20px var(--x-color); }
+    .cell.o { color: var(--o-color); text-shadow: 0 0 20px var(--o-color); }
+    #restart-game {
+      margin: 16px auto 0;
+      padding: 12px 32px;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 50px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: block;
+      text-align: center;
+    }
+    #restart-game:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+    /* Debug */
+    #debug {
+      position: fixed;
+      display: none;
+      bottom: 10px;
+      left: 10px;
+      font-size: 12px;
+      color: #aaa;
+      z-index: 9999;
+      background: rgba(0,0,0,0.5);
+      padding: 5px 10px;
+      border-radius: 8px;
+      max-width: 90%;
+      word-wrap: break-word;
+    }
   </style>
 </head>
 <body>
-
-  <div id="clock">--:--</div>
-  <div id="panel">
-    <div id="text">Скажите «Рамка»...</div>
-    <img id="ai-image" src="" alt="" />
+  <div id="time-container">
+    <div id="clock">--:--</div>
+    <div id="date">—</div>
   </div>
-  <div id="status">Готова</div>
-  <div id="start-btn">Нажми</div>
-
-  <div id="music-controls" style="display:none">
-    <div class="music-btn" id="play-pause">Pause</div>
-    <div class="music-btn" id="vol-down">Volume Down</div>
-    <div class="music-btn" id="vol-up">Volume Up</div>
+  <div id="response"><div id="text">Скажите «Рамка»...</div></div>
+  <div id="weather-panel"></div>
+  <div id="music-controls">
+    <div class="music-btn" id="play-pause"><i class="fas fa-play"></i></div>
+    <div class="music-btn" id="vol-down"><i class="fas fa-volume-down"></i></div>
+    <div class="music-btn" id="vol-up"><i class="fas fa-volume-up"></i></div>
   </div>
-
-  <div id="youtube-player"></div>
-
+  <div id="laser-bar"></div>
+  <div id="start-btn">Start</div>
+  <div id="game-panel">
+    <div id="game-status">Ты: X | Рамка: O</div>
+    <div id="game-board">
+      <div class="cell" data-index="0"></div>
+      <div class="cell" data-index="1"></div>
+      <div class="cell" data-index="2"></div>
+      <div class="cell" data-index="3"></div>
+      <div class="cell" data-index="4"></div>
+      <div class="cell" data-index="5"></div>
+      <div class="cell" data-index="6"></div>
+      <div class="cell" data-index="7"></div>
+      <div class="cell" data-index="8"></div>
+    </div>
+    <div id="restart-game">Новая игра</div>
+  </div>
+  <audio id="radio-player" preload="none"></audio>
+  <div id="debug">Готов к запуску</div>
   <script>
-    const $ = id => document.getElementById(id);
-    const clock = $('clock');
-    const panel = $('panel');
-    const textEl = $('text');
-    const imgEl = $('ai-image');
-    const status = $('status');
-    const startBtn = $('start-btn');
-    const musicControls = $('music-controls');
-    const playPauseBtn = $('play-pause');
-    const volDownBtn = $('vol-down');
-    const volUpBtn = $('vol-up');
-    const youtubePlayer = $('youtube-player');
-    const body = document.body;
+    // Config Constants
+    const CONFIG = {
+      UNSPLASH_KEY: "5cNGGhySiIPu1aKITVFVoPBawvJyQSaY9RVAuu2wh4g",
+      OPENROUTER_KEY: "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",
+      WAKE_WORD: "соня",
+      SLIDE_MS: 18000,
+      CACHE_TIME: 30 * 60 * 1000, // Extended for better perf
+    };
 
-    let hideTimer, recog, ttsInProgress = false;
-    let player = null;
-    let volume = 50;
-    let isPlaying = false;
-    let weatherCache = { data: null, city: '', timestamp: 0 };
-    let alarms = [];
-    let reminders = [];
-    const CACHE_TIME = 10 * 60 * 1000;
-    const WAKE_WORD = "рамка";
-    const SLIDE_MS = 15000;
-    const SLIDESHOW_COUNT = 6;
-    const OPENROUTER_KEY = "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";
+    // DOM Cache
+    const DOM = {
+      debug: document.getElementById('debug'),
+      clock: document.getElementById('clock'),
+      date: document.getElementById('date'),
+      laserBar: document.getElementById('laser-bar'),
+      response: document.getElementById('response'),
+      text: document.getElementById('text'),
+      weatherPanel: document.getElementById('weather-panel'),
+      startBtn: document.getElementById('start-btn'),
+      musicControls: document.getElementById('music-controls'),
+      playPause: document.getElementById('play-pause'),
+      volDown: document.getElementById('vol-down'),
+      volUp: document.getElementById('vol-up'),
+      radioPlayer: document.getElementById('radio-player'),
+      body: document.body,
+      gamePanel: document.getElementById('game-panel'),
+      gameStatus: document.getElementById('game-status'),
+      gameBoard: document.getElementById('game-board'),
+      restartGame: document.getElementById('restart-game'),
+    };
 
-    // === YouTube Player ===
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    // State
+    let state = {
+      hideTimer: null,
+      recog: null,
+      ttsInProgress: false,
+      volume: 50,
+      isPlaying: false,
+      alarms: [],
+      weatherCache: { data: {}, timestamp: 0 },
+      slideInterval: null,
+      alarmInterval: null,
+      musicTimeout: null,
+      audioContext: null,
+      analyser: null,
+      dataArray: null,
+      currentBgIndex: 0,
+      currentBgUrls: [],
+      board: ['', '', '', '', '', '', '', '', ''],
+      currentPlayer: 'X',
+      gameActive: false,
+    };
 
-    function onYouTubeIframeAPIReady() {}
+    // Utils
+    const utils = {
+      log(msg) {
+        DOM.debug.textContent = msg;
+        console.log("DEBUG:", msg);
+      },
+      extractTime(q) {
+        const match = q.match(/(\d{1,2}):(\d{2})/);
+        return match ? `${match[1].padStart(2, '0')}:${match[2]}` : null;
+      },
+      getSeason() {
+        const month = new Date().getMonth();
+        return month >= 2 && month <= 4 ? 'весна' : month >= 5 && month <= 7 ? 'лето' : month >= 8 && month <= 10 ? 'осень' : 'зима';
+      },
+      getTimeOfDay() {
+        const hour = new Date().getHours();
+        return hour >= 6 && hour < 10 ? 'утро' : hour >= 10 && hour < 17 ? 'день' : hour >= 17 && hour < 22 ? 'вечер' : 'ночь';
+      },
+    };
 
-    function createPlayer(videoId) {
-      if (player) player.destroy();
-      player = new YT.Player('youtube-player', {
-        height: '0', width: '0', videoId,
-        playerVars: { 'autoplay': 1, 'loop': 1, 'playlist': videoId, 'controls': 0, 'modestbranding': 1 },
-        events: {
-          'onReady': (e) => {
-            e.target.setVolume(volume);
-            e.target.playVideo();
-            isPlaying = true;
-            playPauseBtn.textContent = 'Pause';
-            musicControls.style.display = 'flex';
-          }
-        }
-      });
-    }
-
-    // === ФИНАЛЬНЫЙ ПОИСК: ytsr + corsproxy.io + ПРЯМОЙ ID ===
-    async function searchAndPlay(query) {
-      showPanel();
-      textEl.textContent = 'Ищу музыку...';
-      body.classList.add('thinking');
-
-      try {
-        const search = encodeURIComponent(query + ' official audio');
-        const proxy = 'https://corsproxy.io/?';
-        const apiUrl = `https://ytsr.vercel.app/search?q=${search}&maxResults=1`;
-
-        const res = await fetch(proxy + encodeURIComponent(apiUrl));
-        if (!res.ok) throw new Error('Network error');
-
-        const data = await res.json();
-
-        if (data.items && data.items[0] && data.items[0].id) {
-          const videoId = data.items[0].id;
-          createPlayer(videoId);
-          textEl.textContent = `Играет: ${query}`;
-          speakText(`Включаю ${query}`);
-        } else {
-          // Прямой поиск по названию
-          const fallbackId = await getDirectVideoId(query);
-          if (fallbackId) {
-            createPlayer(fallbackId);
-            textEl.textContent = `Играет: ${query}`;
-            speakText(`Включаю ${query}`);
-          } else {
-            throw new Error('Not found');
-          }
-        }
-      } catch (e) {
-        textEl.textContent = 'Не нашел. Скажи точнее.';
-        speakText('Не нашел. Скажи точнее.');
-      } finally {
-        setTimeout(() => {
-          body.classList.remove('thinking');
-          status.textContent = 'Слушаю...';
-        }, 1500);
-      }
-    }
-
-    // Прямой поиск по названию (для надёжности)
-    async function getDirectVideoId(query) {
-      try {
-        const q = encodeURIComponent(`${query} official audio`);
-        const res = await fetch(`https://corsproxy.io/?https://www.youtube.com/results?search_query=${q}`);
-        const html = await res.text();
-        const match = html.match(/"videoId":"([^"]{11})"/);
-        return match ? match[1] : null;
-      } catch {
-        return null;
-      }
-    }
-
-    function togglePlay() {
-      if (!player) return;
-      isPlaying ? player.pauseVideo() : player.playVideo();
-      isPlaying = !isPlaying;
-      playPauseBtn.textContent = isPlaying ? 'Pause' : 'Play';
-    }
-
-    function setVolume(delta) {
-      volume = Math.max(0, Math.min(100, volume + delta));
-      if (player) player.setVolume(volume);
-    }
-
-    playPauseBtn.onclick = togglePlay;
-    volUpBtn.onclick = () => setVolume(10);
-    volDownBtn.onclick = () => setVolume(-10);
-
-    // === МУЗЫКА: КОМАНДЫ ===
-    const MUSIC_KEYWORDS = ['музык', 'включи', 'играй', 'песн', 'трек', 'найди', 'поищи', 'поставь', 'запускай', 'выключи', 'пауза', 'стоп', 'тише', 'громче'];
-
-    function isMusicCommand(q) {
-      return MUSIC_KEYWORDS.some(w => q.includes(w));
-    }
-
-    function extractMusicQuery(q) {
-      let clean = q.replace(/рамка|включи|играй|найди|поищи|поставь|запускай/gi, '').trim();
-      if (clean.includes('выключи') || clean.includes('стоп')) return 'stop';
-      if (clean.includes('тише')) return 'vol-';
-      if (clean.includes('громче')) return 'vol+';
-      return clean || 'лоуфай';
-    }
-
-    function handleMusic(q) {
-      const cmd = extractMusicQuery(q);
-      if (cmd === 'stop') {
-        if (player) { player.destroy(); player = null; musicControls.style.display = 'none'; }
-        textEl.textContent = 'Музыка выключена'; speakText('Музыка выключена');
-      } else if (cmd === 'vol-') { setVolume(-10); speakText('Тише'); }
-      else if (cmd === 'vol+') { setVolume(10); speakText('Громче'); }
-      else searchAndPlay(cmd);
-    }
-
-    // === ОСТАЛЬНОЕ (ПОГОДА, БУДИЛЬНИК, НОВОСТИ, TTS, GPT) ===
-    const WEATHER_KEYWORDS = ['погода', 'прогноз', 'улица', 'холодно', 'жарко', 'дождь', 'солнце', 'ветер', 'снег', 'град', 'туман', 'мороз', 'тепло', 'холод', 'градус'];
-    const ALARM_KEYWORDS = ['будильник', 'поставь будильник', 'разбуди'];
-    const REMINDER_KEYWORDS = ['напомни', 'напомнить'];
-    const NEWS_KEYWORDS = ['новости', 'что нового', 'что случилось'];
-
-    function isWeatherQuery(q) { return WEATHER_KEYWORDS.some(w => q.includes(w)); }
-    function isAlarmCommand(q) { return ALARM_KEYWORDS.some(w => q.includes(w)); }
-    function isReminderCommand(q) { return REMINDER_KEYWORDS.some(w => q.includes(w)); }
-    function isNewsCommand(q) { return NEWS_KEYWORDS.some(w => q.includes(w)); }
-
-    function extractCity(q) { const m = q.match(/в\s+([а-яё]+(?:\s+[а-яё]+)?)/i); return m ? m[1] : 'Москва'; }
-    function extractTime(q) { const m = q.match(/(\d{1,2}:\d{2})/); return m ? m[1] : null; }
-
-    async function getWeather(city) {
-      const now = Date.now();
-      if (weatherCache.city === city && weatherCache.data && (now - weatherCache.timestamp) < CACHE_TIME) return weatherCache.data;
-      try {
-        const res = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
-        const data = await res.json();
-        const c = data.current_condition[0];
-        const result = { temp: c.temp_C, feels: c.FeelsLikeC, desc: c.lang_ru[0].value, wind: c.windspeedKmph, humidity: c.humidity };
-        weatherCache = { data: result, city, timestamp: now };
-        return result;
-      } catch { return { temp: '?', feels: '?', desc: 'Нет данных', wind: '?', humidity: '?' }; }
-    }
-
-    async function handleWeather(q) {
-      const city = extractCity(q);
-      const w = await getWeather(city);
-      const response = `${city}: ${w.temp}°C (ощущ. ${w.feels}°). ${w.desc}.`;
-      textEl.textContent = response; speakText(response);
-    }
-
-    function setAlarm(timeStr) {
-      const [h, m] = timeStr.split(':').map(Number);
-      const now = new Date();
-      const alarm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-      if (alarm < now) alarm.setDate(alarm.getDate() + 1);
-      alarms.push(alarm.getTime());
-      speakText(`Будильник на ${timeStr}`);
-    }
-
-    function checkAlarms() {
-      const now = Date.now();
-      alarms = alarms.filter(t => {
-        if (t <= now) {
-          speakText("Время просыпаться!");
-          textEl.textContent = "Будильник!";
-          setTimeout(() => textEl.textContent = 'Скажите «Рамка»...', 5000);
-          return false;
-        }
+    // TTS
+    const tts = {
+      speak(text) {
+        if (!window.speechSynthesis || state.ttsInProgress) return false;
+        try { if (state.recog) state.recog.stop(); } catch (e) { utils.log(`STT stop error: ${e.message}`); }
+        if (state.isPlaying) music.togglePlay();
+        state.ttsInProgress = true;
+        utils.log(`TTS: ${text}`);
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'ru-RU';
+        utter.rate = 0.95;
+        utter.pitch = 1.05;
+        utter.volume = 1;
+        const voices = window.speechSynthesis.getVoices();
+        utter.voice = voices.find(v => v.lang.startsWith('ru')) || voices[0];
+        utter.onend = () => {
+          state.ttsInProgress = false;
+          if (!state.isPlaying && DOM.radioPlayer.src) music.togglePlay();
+          setTimeout(() => { try { state.recog?.start(); } catch (e) { utils.log(`STT restart error: ${e.message}`); } }, 800);
+        };
+        utter.onerror = (e) => {
+          state.ttsInProgress = false;
+          utils.log(`TTS ошибка: ${e.error}`);
+        };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
         return true;
-      });
-    }
-    setInterval(checkAlarms, 1000);
+      },
+    };
 
-    async function getNews() {
-      showPanel();
-      textEl.textContent = 'Загружаю новости...';
-      try {
-        const res = await fetch('https://rbc.ru');
-        const html = await res.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const headlines = Array.from(doc.querySelectorAll('.js-news-feed-item a')).slice(0, 3).map(a => a.textContent.trim());
-        const news = headlines.join('. ');
-        textEl.textContent = news;
-        speakText(`Новости: ${news}`);
-      } catch { textEl.textContent = 'Нет новостей'; speakText('Нет новостей'); }
-    }
-
-    async function getAnswer(q) {
-      if (isWeatherQuery(q)) return handleWeather(q);
-      if (isMusicCommand(q)) return handleMusic(q);
-      if (isAlarmCommand(q)) { const time = extractTime(q); if (time) setAlarm(time); else speakText('Скажи время'); return; }
-      if (isReminderCommand(q)) { speakText('Скажи время и что напомнить'); return; }
-      if (isNewsCommand(q)) return getNews();
-
-      showPanel(); textEl.textContent = 'Думаю...'; body.classList.add('thinking');
-      try {
-        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST", headers: { "Authorization": `Bearer ${OPENROUTER_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "gpt-4o-mini", temperature: 0.4, max_tokens: 500, messages: [
-            { role: "system", content: "Ты — умная фоторамка. Отвечай коротко и дружелюбно." },
-            { role: "user", content: q }
-          ]})
-        });
-        const data = await res.json();
-        const answer = data.choices?.[0]?.message?.content?.trim() || "Хм...";
-        textEl.textContent = answer; speakText(answer);
-      } catch { textEl.textContent = "Нет сети"; }
-      finally { setTimeout(() => { body.classList.remove('thinking'); status.textContent = 'Слушаю...'; }, 1500); }
-    }
-
-    // === ГОЛОС, ЧАСЫ, СЛАЙДЫ, TTS ===
-    function updateClock() {
-      const now = new Date();
-      clock.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    }
-    setInterval(updateClock, 1000); updateClock();
-
-    const images = Array.from({length: SLIDESHOW_COUNT}, (_,i) => `img/${i+1}.jpg`);
-    let currentSlide = 0;
-    function nextSlide() {
-      currentSlide = (currentSlide + 1) % images.length;
-      body.style.backgroundImage = `url('${images[currentSlide]}')`;
-    }
-    setInterval(nextSlide, SLIDE_MS); nextSlide();
-
-    function showPanel() {
-      panel.classList.add('show');
-      clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => {
-        panel.classList.remove('show');
+    // Panels
+    const panels = {
+      showResponse(text, speak = true) {
+        DOM.text.textContent = text;
+        DOM.response.classList.remove('show');
+        setTimeout(() => DOM.response.classList.add('show'), 50);
+        clearTimeout(state.hideTimer);
+        state.hideTimer = setTimeout(panels.hideAll, 10000);
+        if (speak) tts.speak(text);
+      },
+      hideAll() {
+        DOM.weatherPanel.classList.remove('show');
+        DOM.response.classList.remove('show');
+        DOM.gamePanel.classList.remove('show');
+        DOM.laserBar.classList.remove('active');
         setTimeout(() => {
-          if (!panel.classList.contains('show')) {
-            textEl.textContent = 'Скажите «Рамка»...';
-            imgEl.classList.remove('show'); imgEl.src = '';
+          DOM.weatherPanel.innerHTML = '';
+          if (!DOM.response.classList.contains('show')) DOM.text.textContent = 'Скажите «Рамка»...';
+        }, 700);
+      },
+    };
+
+    // Time
+    const time = {
+      update() {
+        const now = new Date();
+        DOM.clock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const options = { weekday: 'long', day: 'numeric', month: 'long' };
+        DOM.date.textContent = now.toLocaleDateString('ru-RU', options).replace(/^\w/, c => c.toUpperCase());
+      },
+    };
+
+    // Background
+    const background = {
+      async update(city = 'Минск') {
+        const season = utils.getSeason();
+        const timeOfDay = utils.getTimeOfDay();
+        let weather = 'ясно';
+        try {
+          const res = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+          if (res.ok) {
+            const data = await res.json();
+            const desc = data.current_condition[0].lang_ru[0].value.toLowerCase();
+            weather = desc.includes('дождь') || desc.includes('ливень') ? 'дождь' :
+                      desc.includes('снег') ? 'снег' :
+                      desc.includes('туман') || desc.includes('дымка') ? 'туман' :
+                      desc.includes('облачн') || desc.includes('пасмурно') ? 'облачно' : 'солнце';
           }
-        }, 600);
-      }, 12000);
-    }
+        } catch {}
+        const query = `${season} ${timeOfDay} ${weather} landscape nature minimalism`;
+        const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&orientation=landscape&client_id=${CONFIG.UNSPLASH_KEY}`;
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          state.currentBgUrls = data.results.filter(p => p.urls?.full).map(p => p.urls.full);
+          if (state.currentBgUrls.length === 0) return;
+          background.change();
+          clearInterval(state.slideInterval);
+          state.slideInterval = setInterval(background.change, CONFIG.SLIDE_MS);
+        } catch { utils.log("Фон: ошибка"); }
+      },
+      change() {
+        if (state.currentBgUrls.length === 0) return;
+        state.currentBgIndex = (state.currentBgIndex + 1) % state.currentBgUrls.length;
+        const url = state.currentBgUrls[state.currentBgIndex];
+        const img = new Image();
+        img.onload = () => { DOM.body.style.backgroundImage = `url('${url}')`; };
+        img.src = url; // Preload for faster switches
+      },
+    };
 
-    function speakText(text) {
-      if (!window.speechSynthesis || ttsInProgress) return;
-      if (recog) recog.stop();
-      if (player && isPlaying) togglePlay();
-      ttsInProgress = true;
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = 'ru-RU'; utter.rate = 0.95;
-      utter.onend = () => {
-        ttsInProgress = false;
-        if (player && !isPlaying) togglePlay();
-        setTimeout(() => { if (recog) recog.start(); }, 700);
-      };
-      window.speechSynthesis.speak(utter);
-    }
+    // Weather
+    const weather = {
+      async show(city = 'Минск', days = 1) {
+        const now = Date.now();
+        const cacheKey = `${city}_${days}`;
+        if (state.weatherCache.data[cacheKey] && (now - state.weatherCache.timestamp) < CONFIG.CACHE_TIME) {
+          weather.display(state.weatherCache.data[cacheKey]);
+          return;
+        }
+        try {
+          const res = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          const current = data.current_condition[0];
+          const forecast = data.weather;
+          const result = [];
+          for (let i = 0; i < Math.min(days, 3); i++) {
+            const day = forecast[i];
+            const hourly = day.hourly[4];
+            result.push({
+              day: i === 0 ? 'Сегодня' : i === 1 ? 'Завтра' : 'Послезавтра',
+              temp: i === 0 ? current.temp_C : `${day.mintempC}...${day.maxtempC}`,
+              feels: i === 0 ? current.FeelsLikeC : null,
+              desc: i === 0 ? current.lang_ru[0].value : day.hourly[4].lang_ru[0].value,
+              humidity: hourly.humidity,
+              wind: hourly.windspeedKmph
+            });
+          }
+          state.weatherCache.data[cacheKey] = result;
+          state.weatherCache.timestamp = now;
+          weather.display(result);
+          background.update(city);
+        } catch { panels.showResponse("Нет данных о погоде"); }
+      },
+      display(data) {
+        let html = '';
+        let speech = '';
+        data.forEach((w, i) => {
+          const icon = w.desc.toLowerCase().includes('солнце') ? 'Sunny' :
+                       w.desc.toLowerCase().includes('дождь') ? 'Rainy' :
+                       w.desc.toLowerCase().includes('снег') ? 'Snow' :
+                       w.desc.toLowerCase().includes('облач') ? 'Cloud' : 'Fog';
+          html += `
+            <div class="weather-day">
+              <div class="weather-icon">${icon}</div>
+              <div class="weather-text">
+                <strong>${w.day}:</strong> ${w.temp}°C${i === 0 ? `, ощущ. ${w.feels}°` : ''}<br>
+                ${w.desc}<br>
+                <span class="weather-details">Вл. ${w.humidity}%, ветер ${w.wind} км/ч</span>
+              </div>
+            </div>
+          `;
+          speech += `${w.day}: ${w.temp}°C${i === 0 ? `, ощущается ${w.feels}°` : ''}, ${w.desc.toLowerCase()}. `;
+        });
+        DOM.weatherPanel.innerHTML = html;
+        DOM.weatherPanel.classList.remove('show');
+        setTimeout(() => DOM.weatherPanel.classList.add('show'), 50);
+        clearTimeout(state.hideTimer);
+        state.hideTimer = setTimeout(panels.hideAll, 12000);
+        tts.speak(speech);
+      },
+    };
 
-    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    function startSTT() {
-      if (!Rec) return status.textContent = "Голос не поддерживается";
-      recog = new Rec(); recog.lang = "ru-RU"; recog.continuous = true; recog.interimResults = false;
-      recog.onresult = e => {
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          if (!e.results[i].isFinal) continue;
-          const text = e.results[i][0].transcript.trim().toLowerCase();
-          if (text.includes(WAKE_WORD)) {
-            const q = text.split(WAKE_WORD).pop().trim();
-            if (q) getAnswer(q);
+    // Music
+    const music = {
+      stations: {
+        'европа плюс': 'https://stream.europeplus.ru:8443/europaplus',
+        'рок': 'https://nashe1.hostingradio.ru/rock-256',
+        'русское радио': 'https://radiorecord.hostingradio.ru/rr96',
+        'дорожное': 'https://dorognoe.hostingradio.ru/dorognoe',
+        'хит фм': 'https://hitfm.hostingradio.ru/hitfm',
+        'энерджи': 'https://energyfm.hostingradio.ru/energy',
+        'лоуфай': 'https://live.lofi.co/?stream=mp3',
+        'юнистар': 'https://stream.unistar.by:8443/unistar'
+      },
+      play(url, name) {
+        DOM.radioPlayer.src = url;
+        DOM.radioPlayer.volume = state.volume / 100;
+        DOM.radioPlayer.play().catch(e => { utils.log(`Play error: ${e.message}`); panels.showResponse("Радио"); });
+        state.isPlaying = true;
+        DOM.playPause.innerHTML = '<i class="fas fa-pause"></i>';
+        music.showControls();
+        panels.showResponse(`Радио: ${name}`);
+      },
+      stop() {
+        DOM.radioPlayer.pause();
+        DOM.radioPlayer.removeAttribute('src');
+        DOM.radioPlayer.load();
+        state.isPlaying = false;
+        DOM.playPause.innerHTML = '<i class="fas fa-play"></i>';
+        DOM.musicControls.classList.remove('show');
+      },
+      togglePlay() {
+        if (state.isPlaying) {
+          DOM.radioPlayer.pause();
+          state.isPlaying = false;
+          DOM.playPause.innerHTML = '<i class="fas fa-play"></i>';
+        } else if (DOM.radioPlayer.src) {
+          DOM.radioPlayer.play().catch(e => utils.log(`Toggle play error: ${e.message}`));
+          state.isPlaying = true;
+          DOM.playPause.innerHTML = '<i class="fas fa-pause"></i>';
+        }
+        music.showControls();
+      },
+      setVolume(delta) {
+        state.volume = Math.max(0, Math.min(100, state.volume + delta));
+        DOM.radioPlayer.volume = state.volume / 100;
+      },
+      showControls() {
+        DOM.musicControls.classList.add('show');
+        clearTimeout(state.musicTimeout);
+        state.musicTimeout = setTimeout(() => DOM.musicControls.classList.remove('show'), 5000);
+      },
+    };
+
+    // Alarms
+    const alarms = {
+      add(timeStr, label = 'Будильник') {
+        const [h, m] = timeStr.split(':').map(Number);
+        const now = new Date();
+        const alarmTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+        if (alarmTime < now) alarmTime.setDate(alarmTime.getDate() + 1);
+        state.alarms.push({ time: alarmTime.getTime(), label });
+        tts.speak(`${label} на ${timeStr}`);
+      },
+      check() {
+        const now = Date.now();
+        state.alarms = state.alarms.filter(a => {
+          if (a.time <= now) {
+            panels.showResponse(`${a.label}!`, true);
+            setTimeout(() => panels.showResponse('Скажите «Соня»...', false), 5000);
+            return false;
+          }
+          return true;
+        });
+      },
+    };
+
+    // Game
+    const game = {
+      init() {
+        state.board = ['', '', '', '', '', '', '', '', ''];
+        state.currentPlayer = 'X';
+        state.gameActive = true;
+        DOM.gameStatus.textContent = 'Твой ход!';
+        document.querySelectorAll('.cell').forEach(cell => {
+          cell.textContent = '';
+          cell.classList.remove('x', 'o');
+        });
+        DOM.gamePanel.classList.add('show');
+        panels.hideAll();
+        tts.speak("Игра началась! Ты — крестики. Твой ход.");
+      },
+      handleCellClick(e) {
+        const idx = e.target.dataset.index;
+        if (state.board[idx] || !state.gameActive || state.currentPlayer !== 'X') return;
+        game.makeMove(idx, 'X');
+        if (state.gameActive) setTimeout(game.aiMove, 800);
+      },
+      makeMove(idx, player) {
+        state.board[idx] = player;
+        const cell = document.querySelector(`.cell[data-index="${idx}"]`);
+        cell.textContent = player;
+        cell.classList.add(player.toLowerCase());
+        const winner = game.checkWinner();
+        if (winner) {
+          state.gameActive = false;
+          if (winner === 'X') {
+            DOM.gameStatus.textContent = 'Ты победил!';
+            tts.speak("Поздравляю! Ты выиграл!");
+          } else if (winner === 'O') {
+            DOM.gameStatus.textContent = 'Рамка победила!';
+            tts.speak("Я выиграла! Хорошая попытка.");
+          } else if (state.board.every(c => c)) {
+            DOM.gameStatus.textContent = 'Ничья!';
+            tts.speak("Ничья! Давай ещё раз?");
+          }
+          return;
+        }
+        state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
+        DOM.gameStatus.textContent = state.currentPlayer === 'X' ? 'Твой ход!' : 'Мой ход...';
+      },
+      aiMove() {
+        if (!state.gameActive) return;
+        const best = game.minimax(state.board, 'O');
+        if (best.index !== null) game.makeMove(best.index, 'O');
+      },
+      checkWinner() {
+        const winPatterns = [
+          [0,1,2], [3,4,5], [6,7,8],
+          [0,3,6], [1,4,7], [2,5,8],
+          [0,4,8], [2,4,6]
+        ];
+        for (let pattern of winPatterns) {
+          if (state.board[pattern[0]] && state.board[pattern[0]] === state.board[pattern[1]] && state.board[pattern[0]] === state.board[pattern[2]]) {
+            return state.board[pattern[0]];
           }
         }
-      };
-      recog.onerror = () => setTimeout(() => { if (!ttsInProgress) recog.start(); }, 1000);
-      recog.onend = () => { if (!ttsInProgress) setTimeout(() => recog.start(), 800); };
-      recog.start(); status.textContent = 'Слушаю...';
+        return state.board.every(c => c) ? 'draw' : null;
+      },
+      minimax(newBoard, player) {
+        const winner = game.checkWinner();
+        if (winner === 'O') return { score: 10 };
+        if (winner === 'X') return { score: -10 };
+        if (winner === 'draw') return { score: 0 };
+        const moves = [];
+        for (let i = 0; i < 9; i++) {
+          if (!newBoard[i]) {
+            const boardCopy = [...newBoard];
+            boardCopy[i] = player;
+            const result = game.minimax(boardCopy, player === 'O' ? 'X' : 'O');
+            moves.push({ index: i, score: result.score });
+          }
+        }
+        let bestScore = player === 'O' ? -Infinity : Infinity;
+        let bestIndex = null;
+        for (let move of moves) {
+          if (player === 'O' ? move.score > bestScore : move.score < bestScore) {
+            bestScore = move.score;
+            bestIndex = move.index;
+          }
+        }
+        return { index: bestIndex, score: bestScore };
+      },
+    };
+
+    // Commands & GPT
+    const commands = {
+      async process(q) {
+        q = q.toLowerCase().trim();
+        if (q.includes('сыграем') || q.includes('крестики') || q.includes('нолики')) {
+          game.init();
+          return;
+        }
+        if (q.includes('погода') || q.includes('градус')) {
+          const city = q.match(/в\s+([а-яё]+(?:\s+[а-яё]+)?)/i)?.[1] || 'Москва';
+          const days = q.includes('3') || q.includes('три') ? 3 : q.includes('завтра') ? 2 : 1;
+          weather.show(city, days);
+          return;
+        }
+        if (/музык|включи|играй|радио|стоп|тише|громче/.test(q)) {
+          const cmd = q.replace(/рамка|включи|играй|радио/gi, '').trim();
+          if (/выключи|стоп/.test(cmd)) { music.stop(); panels.showResponse('Выключено'); }
+          else if (/тише/.test(cmd)) { music.setVolume(-10); music.showControls(); tts.speak('Тише'); }
+          else if (/громче/.test(cmd)) { music.setVolume(10); music.showControls(); tts.speak('Громче'); }
+          else {
+            const station = Object.keys(music.stations).find(k => cmd.includes(k));
+            if (station) music.play(music.stations[station], station);
+            else panels.showResponse('Радио не найдено');
+          }
+          return;
+        }
+        if (q.includes('будильник') || q.includes('разбуди')) {
+          const t = utils.extractTime(q);
+          if (t) alarms.add(t);
+          else tts.speak('Скажи время');
+          return;
+        }
+        if (q.includes('напомни')) {
+          const t = utils.extractTime(q);
+          if (t) alarms.add(t, `Напоминание: ${q.split('напомни').pop().trim()}`);
+          else tts.speak('Скажи время');
+          return;
+        }
+        DOM.laserBar.classList.add('active');
+        try {
+          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${CONFIG.OPENROUTER_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              temperature: 0.5,
+              max_tokens: 200,
+              messages: [
+                { role: "system", content: "Коротко. Дружелюбно. На русском." },
+                { role: "user", content: q }
+              ]
+            })
+          });
+          const data = await res.json();
+          const answer = data.choices?.[0]?.message?.content?.trim() || "Хм...";
+          DOM.laserBar.classList.remove('active');
+          panels.showResponse(answer);
+        } catch {
+          DOM.laserBar.classList.remove('active');
+          panels.showResponse("Нет сети");
+        }
+      },
+    };
+
+    // STT
+    const stt = {
+      start() {
+        const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Rec) { utils.log("STT не поддерживается"); return; }
+        state.recog = new Rec();
+        state.recog.lang = "ru-RU";
+        state.recog.continuous = true;
+        state.recog.interimResults = true;
+        state.recog.onresult = e => {
+          let final = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) final += e.results[i][0].transcript.toLowerCase();
+          }
+          if (final.includes(CONFIG.WAKE_WORD)) {
+            const q = final.split(CONFIG.WAKE_WORD).pop().trim();
+            if (q) {
+              utils.log(`Команда: ${q}`);
+              DOM.laserBar.classList.add('active');
+              commands.process(q);
+            }
+          }
+        };
+        state.recog.onerror = () => setTimeout(() => stt.restart(), 1000);
+        state.recog.onend = () => {
+          if (!state.ttsInProgress) setTimeout(() => stt.restart(), 1000);
+        };
+        try {
+          state.recog.start();
+          utils.log("STT запущен");
+        } catch (e) {
+          utils.log(`STT start error: ${e.message}`);
+        }
+      },
+      restart() {
+        try {
+          state.recog?.start();
+        } catch (e) {
+          utils.log(`STT restart error: ${e.message}`);
+        }
+      },
+    };
+
+    // Audio Analyzer
+    const analyzer = {
+      init(stream) {
+        try {
+          state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          state.analyser = state.audioContext.createAnalyser();
+          state.analyser.fftSize = 256;
+          const source = state.audioContext.createMediaStreamSource(stream);
+          source.connect(state.analyser);
+          state.dataArray = new Uint8Array(state.analyser.frequencyBinCount);
+          analyzer.updateLaser();
+        } catch (e) { utils.log(`Анализатор: ${e.message}`); }
+      },
+      updateLaser() {
+        if (!DOM.laserBar.classList.contains('active') || !state.analyser) {
+          requestAnimationFrame(analyzer.updateLaser);
+          return;
+        }
+        state.analyser.getByteFrequencyData(state.dataArray);
+        const avg = state.dataArray.reduce((a, b) => a + b, 0) / state.dataArray.length;
+        const intensity = Math.min(avg / 60, 2.5);
+        DOM.laserBar.style.transform = `scaleY(${0.8 + intensity})`;
+        requestAnimationFrame(analyzer.updateLaser);
+      },
+    };
+
+    // Init
+    async function init() {
+      utils.log("Запуск...");
+      DOM.startBtn.style.opacity = '0';
+      DOM.startBtn.style.transform = 'translate(-50%, -50%) scale(0.4)';
+      setTimeout(() => DOM.startBtn.remove(), 600);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        utils.log("Микрофон получен");
+        analyzer.init(stream);
+      } catch (err) {
+        utils.log(`Микрофон: ${err.message}`);
+        panels.showResponse("Разрешите микрофон!", false);
+        return;
+      }
+      time.update();
+      setInterval(time.update, 1000);
+      background.update();
+      state.alarmInterval = setInterval(alarms.check, 1000);
+      if (speechSynthesis.getVoices().length === 0) {
+        speechSynthesis.onvoiceschanged = stt.start;
+      } else {
+        stt.start();
+      }
+      panels.showResponse("Слушаю вас...", false);
     }
 
-    startBtn.addEventListener('click', async () => {
-      if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-      startBtn.style.opacity = '0'; startBtn.style.transform = 'translate(-50%, -50%) scale(0.5)';
-      setTimeout(() => startBtn.remove(), 600);
-      try { await navigator.mediaDevices.getUserMedia({ audio: true }); startSTT(); }
-      catch { status.textContent = 'Микрофон не доступен'; }
+    // Event Listeners
+    DOM.playPause.onclick = music.togglePlay;
+    DOM.volUp.onclick = () => { music.setVolume(10); music.showControls(); };
+    DOM.volDown.onclick = () => { music.setVolume(-10); music.showControls(); };
+    document.querySelectorAll('.cell').forEach(cell => cell.addEventListener('click', game.handleCellClick));
+    DOM.restartGame.addEventListener('click', game.init);
+    DOM.startBtn.addEventListener('click', init);
+    window.addEventListener('load', () => {
+      utils.log("Страница загружена");
+      window.speechSynthesis.getVoices();
     });
-
-    if (location.protocol !== 'https:' && !location.hostname.includes('localhost')) {
-      status.textContent = 'Нужен HTTPS!';
-    }
   </script>
 </body>
 </html>

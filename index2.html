@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Smart Frame 22.0 — Лазерный Ультиматум</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --text: #ffffff;
+      --text-soft: rgba(255, 255, 255, 0.78);
+      --glass: rgba(255, 255, 255, 0.14);
+      --glass-border: rgba(255, 255, 255, 0.22);
+      --glow: 0 0 50px rgba(100, 200, 255, 0.35);
+      --blur: blur(38px);
+      --shadow: 0 32px 95px rgba(0, 0, 0, 0.52);
+      --radius: 32px;
+      --laser: #60e0ff;
+      --laser-glow: 0 0 60px #60e0ff, 0 0 120px #60e0ff;
+      --x-color: #60e0ff;
+      --o-color: #ff60a0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: #000 center/cover no-repeat;
+      color: var(--text);
+      transition: background 2.8s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    /* === СТАРТОВАЯ ВСПЫШКА === */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, rgba(100,200,255,0.15), transparent 70%);
+      opacity: 0;
+      pointer-events: none;
+      animation: startupGlow 1.8s ease-out forwards;
+      z-index: 1;
+    }
+    @keyframes startupGlow {
+      0% { opacity: 0; transform: scale(0.8); }
+      50% { opacity: 0.3; transform: scale(1.1); }
+      100% { opacity: 0; transform: scale(1); }
+    }
+    /* === ЧАСЫ + ДАТА === */
+    #time-container {
+      position: absolute;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 10;
+      width: 100%;
+      padding: 0 5vw;
+      pointer-events: none;
+    }
+    #clock {
+      font-size: clamp(8vw, 13vw, 16vw);
+      font-weight: 100;
+      letter-spacing: -2px;
+      line-height: 1;
+      text-shadow: 0 8px 35px rgba(0,0,0,0.7);
+      opacity: 0.98;
+    }
+    #date {
+      font-size: clamp(1.8vw, 3.2vw, 3.6vw);
+      font-weight: 300;
+      margin-top: 10px;
+      opacity: 0.82;
+      letter-spacing: 1.2px;
+      text-shadow: 0 2px 14px rgba(0,0,0,0.6);
+    }
+    /* === ОТВЕТ === */
+    #response {
+      position: absolute;
+      top: 74%;
+      left: 50%;
+      transform: translate(-50%, -50%) translateY(20px);
+      width: 92%;
+      max-width: 900px;
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: clamp(20px, 5vw, 38px);
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-weight: 300;
+      text-align: center;
+      opacity: 0;
+      box-shadow: var(--glow), var(--shadow);
+      transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 25;
+    }
+    #response.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) translateY(0);
+    }
+    /* === ПОГОДА === */
+    #weather-panel {
+      position: absolute;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px) scale(0.96);
+      width: 92%;
+      max-width: 900px;
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: clamp(20px, 5vw, 38px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      opacity: 0;
+      box-shadow: var(--glow), var(--shadow);
+      transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 20;
+    }
+    #weather-panel.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+    .weather-day {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: clamp(1.3rem, 3vw, 1.8rem);
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInUp 0.6s forwards;
+    }
+    .weather-day:nth-child(1) { animation-delay: 0.15s; }
+    .weather-day:nth-child(2) { animation-delay: 0.25s; }
+    .weather-day:nth-child(3) { animation-delay: 0.35s; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+    .weather-icon {
+      font-size: clamp(2.5rem, 5.8vw, 3.4rem);
+      filter: drop-shadow(0 3px 10px rgba(0,0,0,0.55));
+    }
+    .weather-text {
+      flex: 1;
+      font-weight: 300;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.65);
+    }
+    .weather-details {
+      font-size: clamp(0.98rem, 2.1vw, 1.28rem);
+      opacity: 0.82;
+      margin-top: 4px;
+      font-weight: 300;
+    }
+    /* === МУЗЫКА === */
+    #music-controls {
+      position: absolute;
+      bottom: 100px;
+      right: 20px;
+      display: flex;
+      gap: 12px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 30;
+    }
+    #music-controls.show { opacity: 1; }
+    .music-btn {
+      width: clamp(42px, 8.5vw, 52px);
+      height: clamp(42px, 8.5vw, 52px);
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(19px, 4.2vw, 23px);
+      cursor: pointer;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.38);
+      transition: all 0.35s ease;
+    }
+    .music-btn:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.28);
+    }
+    /* === ЛАЗЕР === */
+    #laser-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, transparent 0%, var(--laser) 20%, #ffffff 50%, var(--laser) 80%, transparent 100%);
+      background-size: 300% 100%;
+      opacity: 0;
+      z-index: 30;
+      pointer-events: none;
+      box-shadow: var(--laser-glow);
+      transition: opacity 0.3s ease;
+      animation: laserFlow 2.2s infinite linear, laserPulse 1.8s infinite ease-in-out;
+      transform-origin: bottom;
+    }
+    #laser-bar.active { opacity: 1; }
+    @keyframes laserFlow { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
+    @keyframes laserPulse {
+      0%, 100% { height: 6px; box-shadow: 0 0 60px #60e0ff, 0 0 120px #60e0ff; }
+      50% { height: 10px; box-shadow: 0 0 90px #60e0ff, 0 0 160px #60e0ff, 0 0 200px #60e0ff; }
+    }
+    /* === СТАРТ === */
+    #start-btn {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(100px, 20vw, 120px);
+      height: clamp(100px, 20vw, 120px);
+      background: rgba(210, 210, 255, 0.20);
+      backdrop-filter: blur(24px);
+      border: 2px solid rgba(230, 230, 255, 0.38);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(36px, 8.5vw, 48px);
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: var(--glow), 0 24px 65px rgba(190, 190, 255, 0.32);
+      transition: all 0.7s ease;
+      animation: pulse 2.4s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: var(--glow), 0 24px 65px rgba(190, 190, 255, 0.32); }
+      50% { box-shadow: 0 0 58px rgba(210, 210, 255, 0.58), 0 34px 85px rgba(190, 190, 255, 0.42); }
+    }
+    /* === ИГРА КРЕСТИКИ-НОЛИКИ === */
+    #game-panel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 92%;
+      max-width: 420px;
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      opacity: 0;
+      box-shadow: var(--glow), var(--shadow);
+      transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 30;
+      pointer-events: none;
+    }
+    #game-panel.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: auto;
+    }
+    #game-status {
+      text-align: center;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      margin-bottom: 16px;
+      font-weight: 300;
+    }
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .cell {
+      width: 100%;
+      padding-top: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(3rem, 9vw, 5rem);
+      font-weight: 300;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+    .cell:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.32);
+    }
+    .cell.x { color: var(--x-color); text-shadow: 0 0 20px var(--x-color); }
+    .cell.o { color: var(--o-color); text-shadow: 0 0 20px var(--o-color); }
+    #restart-game {
+      margin: 16px auto 0;
+      padding: 12px 32px;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 50px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: block;
+      text-align: center;
+    }
+    #restart-game:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+    /* === ДЕБАГ === */
+    #debug {
+      position: fixed;
+      display: none;
+      bottom: 10px;
+      left: 10px;
+      font-size: 12px;
+      color: #aaa;
+      z-index: 9999;
+      background: rgba(0,0,0,0.5);
+      padding: 5px 10px;
+      border-radius: 8px;
+      max-width: 90%;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <!-- ОСНОВНЫЕ ЭЛЕМЕНТЫ -->
+  <div id="time-container">
+    <div id="clock">--:--</div>
+    <div id="date">—</div>
+  </div>
+  <div id="response"><div id="text">Скажите «Рамка»...</div></div>
+  <div id="weather-panel"></div>
+  <div id="music-controls">
+    <div class="music-btn" id="play-pause"><i class="fas fa-play"></i></div>
+    <div class="music-btn" id="vol-down"><i class="fas fa-volume-down"></i></div>
+    <div class="music-btn" id="vol-up"><i class="fas fa-volume-up"></i></div>
+  </div>
+  <div id="laser-bar"></div>
+  <div id="start-btn">Start</div>
+  <!-- ИГРА -->
+  <div id="game-panel">
+    <div id="game-status">Ты: X | Рамка: O</div>
+    <div id="game-board">
+      <div class="cell" data-index="0"></div>
+      <div class="cell" data-index="1"></div>
+      <div class="cell" data-index="2"></div>
+      <div class="cell" data-index="3"></div>
+      <div class="cell" data-index="4"></div>
+      <div class="cell" data-index="5"></div>
+      <div class="cell" data-index="6"></div>
+      <div class="cell" data-index="7"></div>
+      <div class="cell" data-index="8"></div>
+    </div>
+    <div id="restart-game">Новая игра</div>
+  </div>
+  <audio id="radio-player" preload="none"></audio>
+  <div id="debug">Готов к запуску</div>
+  <script>
+    // === КОНФИГ ===
+    const UNSPLASH_KEY = "5cNGGhySiIPu1aKITVFVoPBawvJyQSaY9RVAuu2wh4g";
+    const OPENROUTER_KEY = "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";
+    const WAKE_WORD = "соня";
+    const SLIDE_MS = 18000;
+    const CACHE_TIME = 10 * 60 * 1000;
+    // === DOM ===
+    const $ = id => document.getElementById(id);
+    const debug = $('debug');
+    const clock = $('clock');
+    const dateEl = $('date');
+    const laserBar = $('laser-bar');
+    const response = $('response');
+    const textEl = $('text');
+    const weatherPanel = $('weather-panel');
+    const startBtn = $('start-btn');
+    const musicControls = $('music-controls');
+    const playPauseBtn = $('play-pause');
+    const volDownBtn = $('vol-down');
+    const volUpBtn = $('vol-up');
+    const radioPlayer = $('radio-player');
+    const body = document.body;
+    const gamePanel = $('game-panel');
+    const gameStatus = $('game-status');
+    const gameBoard = $('game-board');
+    const restartBtn = $('restart-game');
+    // === ПЕРЕМЕННЫЕ ===
+    let hideTimer, recog, ttsInProgress = false;
+    let volume = 50;
+    let isPlaying = false;
+    let alarms = [];
+    let weatherCache = { data: {}, timestamp: 0 };
+    let slideInterval, alarmInterval;
+    let musicTimeout;
+    let audioContext, analyser, dataArray;
+    let currentBgIndex = 0;
+    let currentBgUrls = [];
+    // === ДЕБАГ ===
+    function log(msg) {
+      debug.textContent = msg;
+      console.log("DEBUG:", msg);
+    }
+    // === TTS (ГОВОРИТ) ===
+    function speakText(text) {
+      if (!window.speechSynthesis || ttsInProgress) return false;
+      if (recog) try { recog.stop(); } catch {}
+      if (isPlaying) togglePlay();
+      ttsInProgress = true;
+      log("TTS: " + text);
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'ru-RU';
+      utter.rate = 0.95;
+      utter.pitch = 1.05;
+      utter.volume = 1;
+      const voices = window.speechSynthesis.getVoices();
+      const ruVoice = voices.find(v => v.lang.startsWith('ru')) || voices[0];
+      if (ruVoice) utter.voice = ruVoice;
+      utter.onend = () => {
+        ttsInProgress = false;
+        if (!isPlaying && radioPlayer.src) togglePlay();
+        setTimeout(() => { if (recog) try { recog.start(); } catch {} }, 800);
+      };
+      utter.onerror = (e) => {
+        ttsInProgress = false;
+        log("TTS ошибка: " + e.error);
+      };
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+      return true;
+    }
+    // === ОТВЕТ + ГОЛОС ===
+    function showResponse(text, speak = true) {
+      textEl.textContent = text;
+      response.classList.remove('show');
+      setTimeout(() => response.classList.add('show'), 50);
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(hideAllPanels, 10000);
+      if (speak) speakText(text);
+    }
+    function hideAllPanels() {
+      weatherPanel.classList.remove('show');
+      response.classList.remove('show');
+      gamePanel.classList.remove('show');
+      laserBar.classList.remove('active');
+      setTimeout(() => {
+        weatherPanel.innerHTML = '';
+        if (!response.classList.contains('show')) textEl.textContent = 'Скажите «Рамка»...';
+      }, 700);
+    }
+    // === ЧАСЫ ===
+    function updateTime() {
+      const now = new Date();
+      clock.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const options = { weekday: 'long', day: 'numeric', month: 'long' };
+      dateEl.textContent = now.toLocaleDateString('ru-RU', options).replace(/^\w/, c => c.toUpperCase());
+    }
+    // === ФОН ===
+    function getSeason() {
+      const m = new Date().getMonth();
+      return m >= 2 && m <= 4 ? 'весна' : m >= 5 && m <= 7 ? 'лето' : m >= 8 && m <= 10 ? 'осень' : 'зима';
+    }
+    function getTimeOfDay() {
+      const h = new Date().getHours();
+      return h >= 6 && h < 10 ? 'утро' : h >= 10 && h < 17 ? 'день' : h >= 17 && h < 22 ? 'вечер' : 'ночь';
+    }
+    async function updateOnlineBackground(city = 'Минск') {
+      const season = getSeason();
+      const timeOfDay = getTimeOfDay();
+      let weather = 'ясно';
+      try {
+        const res = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+        if (res.ok) {
+          const data = await res.json();
+          const desc = data.current_condition[0].lang_ru[0].value.toLowerCase();
+          weather = desc.includes('дождь') || desc.includes('ливень') ? 'дождь' :
+                   desc.includes('снег') ? 'снег' :
+                   desc.includes('туман') || desc.includes('дымка') ? 'туман' :
+                   desc.includes('облачн') || desc.includes('пасмурно') ? 'облачно' : 'солнце';
+        }
+      } catch {}
+      const query = `${season} ${timeOfDay} ${weather} landscape nature minimalism`;
+      const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&orientation=landscape&client_id=${UNSPLASH_KEY}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const urls = data.results.filter(p => p.urls?.full).map(p => p.urls.full);
+        currentBgUrls = urls.length > 0 ? urls : currentBgUrls;
+        changeBackground();
+        clearInterval(slideInterval);
+        slideInterval = setInterval(changeBackground, SLIDE_MS);
+      } catch { log("Фон: ошибка"); }
+    }
+    function changeBackground() {
+      if (currentBgUrls.length === 0) return;
+      currentBgIndex = (currentBgIndex + 1) % currentBgUrls.length;
+      const url = currentBgUrls[currentBgIndex];
+      const img = new Image();
+      img.onload = () => { body.style.backgroundImage = `url('${url}')`; };
+      img.src = url;
+    }
+    // === ПОГОДА ===
+    async function showWeatherPro(city = 'Минск', days = 1) {
+      const now = Date.now();
+      const cacheKey = `${city}_${days}`;
+      if (weatherCache.data[cacheKey] && (now - weatherCache.timestamp) < CACHE_TIME) {
+        displayWeather(weatherCache.data[cacheKey]);
+        return;
+      }
+      try {
+        const res = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const current = data.current_condition[0];
+        const forecast = data.weather;
+        const result = [];
+        for (let i = 0; i < Math.min(days, 3); i++) {
+          const day = forecast[i];
+          const hourly = day.hourly[4];
+          result.push({
+            day: i === 0 ? 'Сегодня' : i === 1 ? 'Завтра' : 'Послезавтра',
+            temp: i === 0 ? current.temp_C : `${day.mintempC}...${day.maxtempC}`,
+            feels: i === 0 ? current.FeelsLikeC : null,
+            desc: i === 0 ? current.lang_ru[0].value : day.hourly[4].lang_ru[0].value,
+            humidity: hourly.humidity,
+            wind: hourly.windspeedKmph
+          });
+        }
+        weatherCache.data[cacheKey] = result;
+        weatherCache.timestamp = now;
+        displayWeather(result);
+        updateOnlineBackground(city);
+      } catch { showResponse("Нет данных о погоде"); }
+    }
+    function displayWeather(data) {
+      let html = '';
+      let speech = '';
+      data.forEach((w, i) => {
+        const icon = w.desc.toLowerCase().includes('солнце') ? 'Sunny' :
+                     w.desc.toLowerCase().includes('дождь') ? 'Rainy' :
+                     w.desc.toLowerCase().includes('снег') ? 'Snow' :
+                     w.desc.toLowerCase().includes('облач') ? 'Cloud' : 'Fog';
+        html += `
+          <div class="weather-day">
+            <div class="weather-icon">${icon}</div>
+            <div class="weather-text">
+              <strong>${w.day}:</strong> ${w.temp}°C${i === 0 ? `, ощущ. ${w.feels}°` : ''}<br>
+              ${w.desc}<br>
+              <span class="weather-details">Вл. ${w.humidity}%, ветер ${w.wind} км/ч</span>
+            </div>
+          </div>
+        `;
+        speech += `${w.day}: ${w.temp}°C${i === 0 ? `, ощущается ${w.feels}°` : ''}, ${w.desc.toLowerCase()}. `;
+      });
+      weatherPanel.innerHTML = html;
+      weatherPanel.classList.remove('show');
+      setTimeout(() => weatherPanel.classList.add('show'), 50);
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(hideAllPanels, 12000);
+      speakText(speech);
+    }
+    // === РАДИО ===
+    const RADIO_STATIONS = {
+      'европа плюс': 'https://stream.europeplus.ru:8443/europaplus',
+      'рок': 'https://nashe1.hostingradio.ru/rock-256',
+      'русское радио': 'https://radiorecord.hostingradio.ru/rr96',
+      'дорожное': 'https://dorognoe.hostingradio.ru/dorognoe',
+      'хит фм': 'https://hitfm.hostingradio.ru/hitfm',
+      'энерджи': 'https://energyfm.hostingradio.ru/energy',
+      'лоуфай': 'https://live.lofi.co/?stream=mp3',
+      'юнистар': 'https://stream.unistar.by:8443/unistar'
+    };
+    function playRadio(url, name) {
+      radioPlayer.src = url;
+      radioPlayer.volume = volume / 100;
+      radioPlayer.play().catch(() => showResponse("Радио"));
+      isPlaying = true;
+      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      showMusicControls();
+      showResponse(`Радио: ${name}`);
+    }
+    function stopRadio() {
+      radioPlayer.pause(); radioPlayer.removeAttribute('src'); radioPlayer.load();
+      isPlaying = false;
+      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+      musicControls.classList.remove('show');
+    }
+    function showMusicControls() {
+      musicControls.classList.add('show');
+      clearTimeout(musicTimeout);
+      musicTimeout = setTimeout(() => musicControls.classList.remove('show'), 5000);
+    }
+    function togglePlay() {
+      if (isPlaying) { radioPlayer.pause(); isPlaying = false; playPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; }
+      else if (radioPlayer.src) { radioPlayer.play(); isPlaying = true; playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; }
+      showMusicControls();
+    }
+    function setVolume(delta) { volume = Math.max(0, Math.min(100, volume + delta)); radioPlayer.volume = volume / 100; }
+    playPauseBtn.onclick = togglePlay;
+    volUpBtn.onclick = () => { setVolume(10); showMusicControls(); };
+    volDownBtn.onclick = () => { setVolume(-10); showMusicControls(); };
+    // === БУДИЛЬНИК ===
+    function extractTime(q) { const m = q.match(/(\d{1,2}):(\d{2})/); return m ? `${m[1].padStart(2,'0')}:${m[2]}` : null; }
+    function addAlarm(timeStr, label = 'Будильник') {
+      const [h, m] = timeStr.split(':').map(Number);
+      const now = new Date();
+      const alarm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+      if (alarm < now) alarm.setDate(alarm.getDate() + 1);
+      alarms.push({ time: alarm.getTime(), label });
+      speakText(`${label} на ${timeStr}`);
+    }
+    function checkAlarms() {
+      const now = Date.now();
+      alarms = alarms.filter(a => {
+        if (a.time <= now) {
+          showResponse(`${a.label}!`, true);
+          setTimeout(() => showResponse('Скажите «Соня»...', false), 5000);
+          return false;
+        }
+        return true;
+      });
+    }
+    // === КРЕСТИКИ-НОЛИКИ ===
+    let board = ['', '', '', '', '', '', '', '', ''];
+    let currentPlayer = 'X';
+    let gameActive = false;
+    function initGame() {
+      board = ['', '', '', '', '', '', '', '', ''];
+      currentPlayer = 'X';
+      gameActive = true;
+      gameStatus.textContent = 'Твой ход!';
+      document.querySelectorAll('.cell').forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('x', 'o');
+      });
+      gamePanel.classList.add('show');
+      hideAllPanels();
+      speakText("Игра началась! Ты — крестики. Твой ход.");
+    }
+    function handleCellClick(e) {
+      const idx = e.target.dataset.index;
+      if (board[idx] || !gameActive || currentPlayer !== 'X') return;
+      makeMove(idx, 'X');
+      if (gameActive) setTimeout(aiMove, 800);
+    }
+    function makeMove(idx, player) {
+      board[idx] = player;
+      const cell = document.querySelector(`.cell[data-index="${idx}"]`);
+      cell.textContent = player;
+      cell.classList.add(player.toLowerCase());
+      const winner = checkWinner();
+      if (winner) {
+        gameActive = false;
+        if (winner === 'X') {
+          gameStatus.textContent = 'Ты победил!';
+          speakText("Поздравляю! Ты выиграл!");
+        } else if (winner === 'O') {
+          gameStatus.textContent = 'Рамка победила!';
+          speakText("Я выиграла! Хорошая попытка.");
+        } else if (board.every(c => c)) {
+          gameStatus.textContent = 'Ничья!';
+          speakText("Ничья! Давай ещё раз?");
+        }
+        return;
+      }
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      gameStatus.textContent = currentPlayer === 'X' ? 'Твой ход!' : 'Мой ход...';
+    }
+    function aiMove() {
+      if (!gameActive) return;
+      const best = minimax(board, 'O');
+      if (best.index !== null) makeMove(best.index, 'O');
+    }
+    function checkWinner() {
+      const win = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for (let w of win) {
+        if (board[w[0]] && board[w[0]] === board[w[1]] && board[w[0]] === board[w[2]]) return board[w[0]];
+      }
+      return board.every(c => c) ? 'draw' : null;
+    }
+    function minimax(newBoard, player) {
+      const winner = checkWinner();
+      if (winner === 'O') return { score: 10 };
+      if (winner === 'X') return { score: -10 };
+      if (winner === 'draw') return { score: 0 };
+      const moves = [];
+      for (let i = 0; i < 9; i++) {
+        if (!newBoard[i]) {
+          const boardCopy = [...newBoard];
+          boardCopy[i] = player;
+          const result = minimax(boardCopy, player === 'O' ? 'X' : 'O');
+          moves.push({ index: i, score: result.score });
+        }
+      }
+      let best = player === 'O' ? -Infinity : Infinity;
+      let bestIndex = null;
+      for (let m of moves) {
+        if (player === 'O' ? m.score > best : m.score < best) {
+          best = m.score;
+          bestIndex = m.index;
+        }
+      }
+      return { index: bestIndex, score: best };
+    }
+    document.querySelectorAll('.cell').forEach(cell => {
+      cell.addEventListener('click', handleCellClick);
+    });
+    restartBtn.addEventListener('click', initGame);
+    // === GPT + КОМАНДЫ ===
+    async function getAnswer(q) {
+      q = q.toLowerCase().trim();
+      if (q.includes('сыграем') || q.includes('крестики') || q.includes('нолики')) {
+        initGame();
+        return;
+      }
+      if (q.includes('погода') || q.includes('градус')) {
+        const city = q.match(/в\s+([а-яё]+(?:\s+[а-яё]+)?)/i)?.[1] || 'Москва';
+        const days = q.includes('3') || q.includes('три') ? 3 : q.includes('завтра') ? 2 : 1;
+        showWeatherPro(city, days);
+        return;
+      }
+      if (/музык|включи|играй|радио|стоп|тише|громче/.test(q)) {
+        const cmd = q.replace(/рамка|включи|играй|радио/gi, '').trim();
+        if (/выключи|стоп/.test(cmd)) { stopRadio(); showResponse('Выключено'); }
+        else if (/тише/.test(cmd)) { setVolume(-10); showMusicControls(); speakText('Тише'); }
+        else if (/громче/.test(cmd)) { setVolume(10); showMusicControls(); speakText('Громче'); }
+        else {
+          const station = Object.keys(RADIO_STATIONS).find(k => cmd.includes(k));
+          station ? playRadio(RADIO_STATIONS[station], station) : showResponse('Радио не найдено');
+        }
+        return;
+      }
+      if (q.includes('будильник') || q.includes('разбуди')) { const t = extractTime(q); t ? addAlarm(t) : speakText('Скажи время'); return; }
+      if (q.includes('напомни')) { const t = extractTime(q); t ? addAlarm(t, `Напоминание: ${q.split('напомни').pop().trim()}`) : speakText('Скажи время'); return; }
+      laserBar.classList.add('active');
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${OPENROUTER_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "gpt-4o-mini", temperature: 0.5, max_tokens: 200, messages: [
+            { role: "system", content: "Коротко. Дружелюбно. На русском." },
+            { role: "user", content: q }
+          ]})
+        });
+        const data = await res.json();
+        const answer = data.choices?.[0]?.message?.content?.trim() || "Хм...";
+        laserBar.classList.remove('active');
+        showResponse(answer);
+      } catch {
+        laserBar.classList.remove('active');
+        showResponse("Нет сети");
+      }
+    }
+    // === ГОЛОСОВОЕ РАСПОЗНАВАНИЕ ===
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    function startSTT() {
+      if (!Rec) { log("STT не поддерживается"); return; }
+      recog = new Rec();
+      recog.lang = "ru-RU";
+      recog.continuous = true;
+      recog.interimResults = true;
+      recog.onresult = e => {
+        let final = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) final += e.results[i][0].transcript.toLowerCase();
+        }
+        if (final.includes(WAKE_WORD)) {
+          const q = final.split(WAKE_WORD).pop().trim();
+          if (q) {
+            log("Команда: " + q);
+            laserBar.classList.add('active');
+            getAnswer(q);
+          }
+        }
+      };
+      recog.onerror = () => setTimeout(() => recog && recog.start(), 1000);
+      recog.onend = () => { if (!ttsInProgress) setTimeout(() => recog && recog.start(), 1000); };
+      try { recog.start(); log("STT запущен"); } catch {}
+    }
+    // === АНАЛИЗАТОР ГОЛОСА ===
+    function initAudioAnalyzer(stream) {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        updateLaserIntensity();
+      } catch (e) { log("Анализатор: " + e.message); }
+    }
+    function updateLaserIntensity() {
+      if (!laserBar.classList.contains('active') || !analyser) {
+        requestAnimationFrame(updateLaserIntensity);
+        return;
+      }
+      analyser.getByteFrequencyData(dataArray);
+      const avg = dataArray.reduce((a,b) => a+b, 0) / dataArray.length;
+      const intensity = Math.min(avg / 60, 2.5);
+      laserBar.style.transform = `scaleY(${0.8 + intensity})`;
+      requestAnimationFrame(updateLaserIntensity);
+    }
+    // === СТАРТ ===
+    startBtn.addEventListener('click', async () => {
+      log("Запуск...");
+      startBtn.style.opacity = '0';
+      startBtn.style.transform = 'translate(-50%, -50%) scale(0.4)';
+      setTimeout(() => startBtn.remove(), 600);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        log("Микрофон получен");
+        initAudioAnalyzer(stream);
+      } catch (err) {
+        log("Микрофон: " + err.message);
+        showResponse("Разрешите микрофон!", false);
+        return;
+      }
+      updateTime();
+      setInterval(updateTime, 1000);
+      updateOnlineBackground();
+      alarmInterval = setInterval(checkAlarms, 1000);
+      if (speechSynthesis.getVoices().length === 0) {
+        speechSynthesis.onvoiceschanged = startSTT;
+      } else {
+        startSTT();
+      }
+      showResponse("Слушаю вас...", false);
+    });
+    window.addEventListener('load', () => {
+      log("Страница загружена");
+      window.speechSynthesis.getVoices();
+    });
+  </script>
+</body>
+</html>
+ 
+ 
